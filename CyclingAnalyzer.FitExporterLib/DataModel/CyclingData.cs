@@ -16,20 +16,27 @@ namespace CyclingAnalyzer.FitExporterLib.DataModel
 
         public List<StandEvent> StandEvent = new List<StandEvent>();
 
-        private bool IsCalculateWithZero { get; set; } = true;
-        private double MaxTimeSecondDifferentBetweenTwoPoint { get; set; } = 5;
-        private double MinMoveSpeed { get; set; } = 0;
-        private double FTP { get; set; } = 200;
-        private double LTHR { get; set; } = 160;
+        private bool IsCalculateWithZero { get; set; } = GlobalSettings.IsCalculateWithZero;
+        private double MaxTimeSecondDifferentBetweenTwoPoint { get; set; } = GlobalSettings.MaxTimeSecondDifferentBetweenTwoPoint;
+        private double MinMoveSpeed { get; set; } = GlobalSettings.MinMoveSpeed;
+        private double FTP { get; set; } = GlobalSettings.FTP;
+        private double LTHR { get; set; } = GlobalSettings.LTHR;
 
         #region constructor
-        public CyclingData()
+        public CyclingData(double? lthr = null, double? ftp = null)
         {
-
+            this.LTHR = lthr.HasValue ? lthr.Value : GlobalSettings.LTHR;
+            this.FTP = ftp.HasValue ? ftp.Value : GlobalSettings.FTP;
         }
 
-        public CyclingData(CyclingDataPoint[] dataPoints, CyclingData sourceData = null)
+        public CyclingData(CyclingDataPoint[] dataPoints, CyclingData sourceData = null, double? lthr = null, double? ftp = null)
         {
+            this.LTHR = sourceData != null ? sourceData.LTHR : GlobalSettings.LTHR;
+            this.FTP = sourceData != null ? sourceData.FTP : GlobalSettings.FTP;
+
+            this.LTHR = lthr.HasValue ? lthr.Value : GlobalSettings.LTHR;
+            this.FTP = ftp.HasValue ? ftp.Value : GlobalSettings.FTP;
+
             int paramSlopeSplitMinSeconds = DefaultParamSlopeSplitMinSeconds;
             int paramSlopeSplitMeter = DefaultParamSlopeSplitMeter;
 
@@ -2138,7 +2145,7 @@ namespace CyclingAnalyzer.FitExporterLib.DataModel
                 var maxP = this._DataPoints.Where(p => p.Power.TotalPower >= this.SummaryMaxPower).First();
                 startIndex = this._DataPoints.IndexOf(maxP);
                 endIndex = startIndex;
-                return new CyclingData(new CyclingDataPoint[] { maxP });
+                return new CyclingData(new CyclingDataPoint[] { maxP }, null, this.LTHR, this.FTP);
             }
 
             double currentMax = -1;
@@ -2214,7 +2221,7 @@ namespace CyclingAnalyzer.FitExporterLib.DataModel
                 return null;
             }
 
-            CyclingData tempC = new CyclingData(points.ToArray());
+            CyclingData tempC = new CyclingData(points.ToArray(), null, this.LTHR, this.FTP);
 
             var p = new CyclingDataPoint();
             var firstP = points.First();

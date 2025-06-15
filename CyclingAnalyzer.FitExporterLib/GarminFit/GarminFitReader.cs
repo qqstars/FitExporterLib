@@ -66,7 +66,7 @@ namespace CyclingAnalyzer.FitExporterLib.GarminFit
         /// <param name="isValidFile"></param>
         /// <param name="cyclingData">if is not valid file, return null</param>
         /// <returns></returns>
-        private static bool ReadFile(string filePath, bool isOnlyGetID, out System.DateTime id, out GarminFitValidation isValidFile, out CyclingData cyclingData, out System.DateTime firstPointDateTime)
+        private static bool ReadFile(string filePath, bool isOnlyGetID, out System.DateTime id, out GarminFitValidation isValidFile, out CyclingData cyclingData, out System.DateTime firstPointDateTime, double? lthr = null, double? ftp = null)
         {
             isValidFile = GarminFitValidation.Bad;
             cyclingData = null;
@@ -100,7 +100,7 @@ namespace CyclingAnalyzer.FitExporterLib.GarminFit
                     return false;
                 }
 
-                cyclingData = new CyclingData();
+                cyclingData = new CyclingData(lthr, ftp);
 
                 CyclingData result = cyclingData;
 
