@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CyclingAnalyzer.FitExporter": {
+      "commandName": "Project",
+      "commandLineArgs": "--format=\"{Name}_{BirthYear}_{Height}_{Weight}_{Gender}\""
+    }
+  }
+}

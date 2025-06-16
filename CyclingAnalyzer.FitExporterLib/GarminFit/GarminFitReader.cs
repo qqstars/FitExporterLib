@@ -41,8 +41,12 @@ namespace CyclingAnalyzer.FitExporterLib.GarminFit
         {
             System.DateTime dt;
             bool result = ReadFile(filePath, false, out dt, out isValidFile, out cyclingData, out firstPointDateTime);
-            cyclingData.GetExtraData(cyclingData.ParamSlopeSplitMeter);
-            cyclingData.GetRangeData(lthr, ftp);
+
+            if (cyclingData != null)
+            {
+                cyclingData.GetExtraData(cyclingData.ParamSlopeSplitMeter);
+                cyclingData.GetRangeData(lthr, ftp);
+            }
 
             return result;
         }
