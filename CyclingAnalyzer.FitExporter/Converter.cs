@@ -14,10 +14,10 @@ namespace CyclingAnalyzer.FitExporter
             var inputPath = options.InputPath;
             var outputPath = options.OutputPath;
 
-            Convert(options.InputPath, options.OutputPath, options.OutputType, options.DirectoryNameFormat);
+            Convert(options.InputPath, options.OutputPath, options.OutputType, options.DirectoryNameFormat, options.ContainsOneSecChangeRate, options.ContainsThreeSecChangeRate);
         }
 
-        public static void Convert(string inputPath, string outputPath, OutputType outputType, string directoryNameFormat = "")
+        public static void Convert(string inputPath, string outputPath, OutputType outputType, string directoryNameFormat = "", bool containsOneSecChangeRate = false, bool containsThreeSecChangeRate = false)
         {
             
             if (File.Exists(inputPath))
@@ -30,7 +30,7 @@ namespace CyclingAnalyzer.FitExporter
                 Console.WriteLine();
                 Console.WriteLine(string.Join("\r\n", fileAdditionalPropertyValues.Select(kvp => $"{kvp.Key}: {kvp.Value}")));
 
-                ConvertFile(inputPath, outputPath, outputType, fileAdditionalPropertyValues);
+                ConvertFile(inputPath, outputPath, outputType, fileAdditionalPropertyValues, containsOneSecChangeRate, containsThreeSecChangeRate);
                 return;
             }
 
@@ -56,7 +56,7 @@ namespace CyclingAnalyzer.FitExporter
                     continue;
                 }
 
-                if (ConvertFile(file.FullName, outputPath, outputType, additionalPropertyValues))
+                if (ConvertFile(file.FullName, outputPath, outputType, additionalPropertyValues, containsOneSecChangeRate, containsThreeSecChangeRate))
                 { 
                     Console.WriteLine($"Converted {file.FullName} to {outputPath} successfully.");
                 }
@@ -69,11 +69,11 @@ namespace CyclingAnalyzer.FitExporter
             foreach (var subDirectory in directories)
             {
                 // iterate all sub-directories and convert them recursively.
-                Convert(subDirectory.FullName, Path.Combine(outputPath, Path.GetFileNameWithoutExtension(subDirectory.FullName)), outputType, directoryNameFormat);
+                Convert(subDirectory.FullName, Path.Combine(outputPath, Path.GetFileNameWithoutExtension(subDirectory.FullName)), outputType, directoryNameFormat, containsOneSecChangeRate, containsThreeSecChangeRate);
             }
         }
 
-        public static bool ConvertFile(string inputPath, string outputPath, OutputType outputType, IDictionary<string, string> additionalPropertyValues)
+        public static bool ConvertFile(string inputPath, string outputPath, OutputType outputType, IDictionary<string, string> additionalPropertyValues, bool containsOneSecChangeRate = false, bool containsThreeSecChangeRate = false)
         {
             if (!string.Equals($".{outputType}", Path.GetExtension(outputPath), StringComparison.OrdinalIgnoreCase))
             {
@@ -82,17 +82,16 @@ namespace CyclingAnalyzer.FitExporter
                 outputPath = Path.Combine(outputPath, fileName);
             }
 
-            if (!Directory.Exists(Path.GetDirectoryName(outputPath)))
+            if (Path.GetDirectoryName(outputPath) is string dir && !Directory.Exists(dir))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+                Directory.CreateDirectory(dir);
             }
 
             switch (outputType)
             {
                 case OutputType.CSV:
                     var csvConverter = new FitToCsvConverter(SupportProperties.AllProperties, additionalPropertyValues);
-                    return csvConverter.ConvertToCsvFile(inputPath, outputPath);
-                    break;
+                    return csvConverter.ConvertToCsvFile(inputPath, outputPath, containsOneSecChangeRate, containsThreeSecChangeRate);
 
                 case OutputType.JSON:
                     // Implement JSON conversion logic here
@@ -110,6 +109,8 @@ namespace CyclingAnalyzer.FitExporter
         public string OutputPath { get; set; } = string.Empty;
         public OutputType OutputType { get; set; } = OutputType.CSV;
         public string DirectoryNameFormat { get; set; } = string.Empty;
+        public bool ContainsOneSecChangeRate { get; set; } = true;
+        public bool ContainsThreeSecChangeRate { get; set; } = true;
     }
 
     internal enum OutputType

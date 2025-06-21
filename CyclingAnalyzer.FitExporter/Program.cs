@@ -9,7 +9,9 @@ class Program
         { "input_path", new string[] { "--input", "-i", "/i" } },
         { "output_path", new string[] { "--output", "-o", "/o" } },
         { "output_type", new string[] { "--type", "-t", "/t" } },
-        { "directory_name_format", new string[] { "--format", "-f", "/f" } }
+        { "directory_name_format", new string[] { "--format", "-f", "/f" } },
+        { "contains_one_sec_change_rate", new string[] { "--onesec", "-1", "/1" } },
+        { "contains_three_sec_change_rate", new string[] { "--threesec", "-3", "/3" } }
     };
 
     static void Main(string[] args)
@@ -44,6 +46,8 @@ class Program
         Console.WriteLine("                                              Example: set as {Name}_{BirthYear}_{Height}_{Weight}_{Gender}");
         Console.WriteLine("                                              And the folder name QQ_1980_180_78_M:");
         Console.WriteLine("                                              will add additional columns into the output data.");
+        Console.WriteLine("  --onesec=<true/false>, -1 <T/F>, /1 <T/F>   Specify if contains one second change rate.");
+        Console.WriteLine("  --threesec=<true/false>, -3 <T/F>, /3 <T/F> Specify if contains three seconds change rate.");
     }
 
     private static IDictionary<string, string> ReadArgs(string[] args)
@@ -101,7 +105,9 @@ class Program
             InputPath = options.ContainsKey("input_path") ? options["input_path"] : Environment.CurrentDirectory,
             OutputPath = options.ContainsKey("output_path") ? options["output_path"] : Path.Combine(Environment.CurrentDirectory, "Output"),
             OutputType = outputType,
-            DirectoryNameFormat = options.ContainsKey("directory_name_format") ? options["directory_name_format"] : string.Empty
+            DirectoryNameFormat = options.ContainsKey("directory_name_format") ? options["directory_name_format"] : string.Empty,
+            ContainsOneSecChangeRate = options.ContainsKey("contains_one_sec_change_rate") && bool.TryParse(options["contains_one_sec_change_rate"], out bool containsOneSecChangeRate) ? containsOneSecChangeRate : true,
+            ContainsThreeSecChangeRate = options.ContainsKey("contains_three_sec_change_rate") && bool.TryParse(options["contains_three_sec_change_rate"], out bool containsThreeSecChangeRate) ? containsThreeSecChangeRate : true,
         };
 
         return result;

@@ -14,9 +14,9 @@ namespace CyclingAnalyzer.FitExporter
         /// <param name="format"></param>
         /// <param name="input"></param>
         /// <returns></returns>
-        public static IDictionary<string, string> GetMapValues(string format, string input)
+        public static IDictionary<string, string> GetMapValues(string format, string? input)
         {
-            if (string.IsNullOrWhiteSpace(format))
+            if (string.IsNullOrWhiteSpace(format) || string.IsNullOrWhiteSpace(input))
             {
                 return new Dictionary<string, string>();
             }
@@ -24,8 +24,8 @@ namespace CyclingAnalyzer.FitExporter
             List<string> keys = new List<string>();
             List<string> seperators = new List<string>();
 
-            StringBuilder keyBuilder = null;
-            StringBuilder separatorBuilder = new StringBuilder();
+            StringBuilder? keyBuilder = null;
+            StringBuilder? separatorBuilder = new StringBuilder();
             separatorBuilder.Append("^");
 
             foreach (var c in format)
