@@ -1,0 +1,13 @@
+# ---------- core scientific stack ----------
+numpy
+pandas
+scikit-learn
+matplotlib
+tqdm
+
+# ---------- GPU-enabled PyTorch 2.2 ----------
+torch==2.3.0+cu121
+torchvision==0.18.0+cu121      # optional—nice for quick tensor image ops
+
+# tell pip where to find the CUDA wheels
+--extra-index-url https://download.pytorch.org/whl/cu121
