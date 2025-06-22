@@ -65,6 +65,10 @@ namespace CyclingAnalyzer.FitExporterLib.Converters
                     File.Delete(csvFilePath);
                 }
 
+                // calculate slope every 50 meters. And minumum smoothness with 10 seconds.
+                cyclingData.ParamSlopeSplitMeter = 50;
+                cyclingData.ParamSlopeSplitMinSeconds = 10;
+
                 File.WriteAllText(csvFilePath, this.ConvertToCsvString(cyclingData, containsOneSecChangeRate, containsThreeSecChangeRate), Encoding.UTF8);
 
                 return true;
@@ -83,12 +87,7 @@ namespace CyclingAnalyzer.FitExporterLib.Converters
             {
                 results.Add(prop);
 
-                if (!string.Equals(prop, SupportProperties.Time, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(prop, SupportProperties.ElapsedTimeSeconds, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(prop, SupportProperties.PositionLatitude, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(prop, SupportProperties.PositionLongitude, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(prop, SupportProperties.Distance, StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(prop, SupportProperties.Temperature, StringComparison.OrdinalIgnoreCase))
+                if (SupportProperties.AllChangeRateSupportedProperties.Any(p => string.Equals(p, prop, StringComparison.OrdinalIgnoreCase)))
                 {
                     if (containsOneSecChangeRate)
                     {

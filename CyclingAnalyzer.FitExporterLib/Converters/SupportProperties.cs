@@ -21,6 +21,8 @@ namespace CyclingAnalyzer.FitExporterLib.Converters
 
         public const string Distance = "DistanceMeter";
 
+        public const string Slope = "Slope";
+
         public const string Speed = "Speed";
 
         public const string HeartRate = "HeartRateBpm";
@@ -40,12 +42,22 @@ namespace CyclingAnalyzer.FitExporterLib.Converters
             Time,
             ElapsedTimeSeconds,
             Distance,
+            Slope,
             Altitude,
             Speed,
             HeartRate,
             Cadence,
             Power,
             Temperature
+        };
+
+        public static string[] AllChangeRateSupportedProperties = new string[]
+        {
+            Altitude,
+            Speed,
+            HeartRate,
+            Cadence,
+            Power
         };
 
         public static string GetPropertyValue(this CyclingDataPoint point, string propertyName, CyclingDataPoint? pointOneSecBefore = null, CyclingDataPoint? pointThreeSecBefore = null)
@@ -62,6 +74,8 @@ namespace CyclingAnalyzer.FitExporterLib.Converters
                     return point.Position.LongitudeDegrees.ToString();
                 case Distance:
                     return point.DistanceMeter.ToString("F2");
+                case Slope:
+                    return point.Position.MomentSlope.ToString("F6");
                 case Altitude:
                     return point.Position.AltitudeMeters.ToString("F2");
                 case Altitude + OneSecChangeRateSuffix:

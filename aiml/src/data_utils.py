@@ -6,9 +6,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 ## COLUMNS = [
-##    "Time", "ElapsedTime", "DistanceMeter", "AltitudeMeters",
-##    "Speed", "HeartRateBpm", "CadenceRpm", "Power", "Temperature"
-##]
+## "Name", "BirthYear", "Height", "Weight", "Gender", "Time", "ElapsedTime", "DistanceMeter", "Slope", 
+## "AltitudeMeters", "AltitudeMetersOneSecChangeRate", "AltitudeMetersThreeSecChangeRate", "Speed", "SpeedOneSecChangeRate", "SpeedThreeSecChangeRate", 
+## "HeartRateBpm", "HeartRateBpmOneSecChangeRate", "HeartRateBpmThreeSecChangeRate", "CadenceRpm", "CadenceRpmOneSecChangeRate", "CadenceRpmThreeSecChangeRate", 
+## "Power", "PowerOneSecChangeRate", "PowerThreeSecChangeRate", "Temperature"
+## ]
 
 def read_all_csv(folder: str) -> pd.DataFrame:
     dfs = []
@@ -34,6 +36,10 @@ def read_all_csv(folder: str) -> pd.DataFrame:
     combo.sort_values("Time", inplace=True)
     combo.reset_index(drop=True, inplace=True)
 
+    # insert Age column by calculating average datetime of Time, then calculate with BirthYear.
+    average_year = combo["Time"].mean().year
+    combo["age"] = average_year - combo["BirthYear"]
+
     logger.info("util.read_all_csv: return combo")
     return combo     # ← still raw, fix_gaps will handle gaps
 
@@ -51,11 +57,14 @@ def fix_gaps(df: pd.DataFrame) -> pd.DataFrame:
 
     # zero-speed / zero-power during pauses
     df[["Speed", "Power"]] = df[["Speed", "Power"]].fillna(0.0)
+    df[["SpeedOneSecChangeRate", "SpeedThreeSecChangeRate"]] = df[["SpeedThreeSecChangeRate", "SpeedThreeSecChangeRate"]].fillna(0.0)
 
     # forward-fill everything else
     ffill_cols = [
-        "HeartRateBpm", "CadenceRpm", "AltitudeMeters",
-        "DistanceMeter", "Temperature", "ride_id"
+        "BirthYear", "age", "Height", "Weight", "Gender",
+        "AltitudeMeters", "AltitudeMetersOneSecChangeRate", "AltitudeMetersThreeSecChangeRate", 
+        "HeartRateBpm", "HeartRateBpmOneSecChangeRate", "HeartRateBpmThreeSecChangeRate", "CadenceRpm", "CadenceRpmOneSecChangeRate", "CadenceRpmThreeSecChangeRate",
+        "DistanceMeter", "Slope", "Temperature", "ride_id"
     ]
     df[ffill_cols] = df[ffill_cols].ffill()
 
@@ -66,36 +75,40 @@ def fix_gaps(df: pd.DataFrame) -> pd.DataFrame:
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    # Convert the unit of sppeed from km/h to m/s
-    # Speed (m/s)  ⬆︎  (Speed in km/h) * (1/3.6)
-    KPH_TO_MS = 1/3.6
-    df["speed_ms"] = df["Speed"] * KPH_TO_MS
+    ### # Convert the unit of sppeed from km/h to m/s
+    ### # Speed (m/s)  ⬆︎  (Speed in km/h) * (1/3.6)
+    ### KPH_TO_MS = 1/3.6
+    ### df["speed_ms"] = df["Speed"] * KPH_TO_MS
 
-    # Acceleration (m/s²)
-    df["accel_ms2"] = df["speed_ms"].diff().fillna(0)
+    ### # Acceleration (m/s²)
+    ### df["accel_ms2"] = df["speed_ms"].diff().fillna(0)
 
-    # Distance delta (m)
-    df["delta_dist"] = df["DistanceMeter"].diff().fillna(0)
+    ### # Distance delta (m)
+    ### df["delta_dist"] = df["DistanceMeter"].diff().fillna(0)
 
-    # Slope (%)  ⬆︎  (Δalt / Δdist) * 100 – guard against zero distance
-    df["slope_pct"] = np.where(
-        df["delta_dist"] > 0,
-        (df["AltitudeMeters"].diff().fillna(0) / df["delta_dist"]) * 100,
-        0.0
-    ).clip(-30, 30)  # tame outliers
+    ### # Slope (%)  ⬆︎  (Δalt / Δdist) * 100 – guard against zero distance
+    ### df["slope_pct"] = np.where(
+    ###     df["delta_dist"] > 0,
+    ###     (df["AltitudeMeters"].diff().fillna(0) / df["delta_dist"]) * 100,
+    ###     0.0
+    ### ).clip(-30, 30)  # tame outliers
 
-    # Rolling means smooth sensors a bit
-    for col in ["speed_ms", "accel_ms2", "slope_pct", "HeartRateBpm", "CadenceRpm"]:
-        df[f"{col}_smooth"] = df[col].rolling(window=3, min_periods=1).mean()
+    ### # Rolling means smooth sensors a bit
+    ### for col in ["speed_ms", "accel_ms2", "slope_pct", "HeartRateBpm", "CadenceRpm"]:
+    ###     df[f"{col}_smooth"] = df[col].rolling(window=3, min_periods=1).mean()
 
     # Choose model-input columns
     features = [
-        "speed_ms_smooth",
-        "accel_ms2_smooth",
-        "slope_pct_smooth",
-        "HeartRateBpm_smooth",
-        "CadenceRpm_smooth",
-        "Temperature"
+        "Slope",
+        "Speed", "SpeedOneSecChangeRate", "SpeedThreeSecChangeRate",
+        "AltitudeMeters", "AltitudeMetersOneSecChangeRate", "AltitudeMetersThreeSecChangeRate",
+        "HeartRateBpm", "HeartRateBpmOneSecChangeRate", "HeartRateBpmThreeSecChangeRate",
+        "CadenceRpm", "CadenceRpmOneSecChangeRate", "CadenceRpmThreeSecChangeRate",
+        "Temperature",
+        "age",
+        "Height",
+        "Weight",
+        "Gender"
     ]
     target = "Power"
     keep_cols   = features + [target, "ride_id"]   # ← retain ride ID
