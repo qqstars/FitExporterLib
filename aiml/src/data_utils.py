@@ -5,19 +5,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-COLUMNS = [
-    "Time", "ElapsedTime", "DistanceMeter", "AltitudeMeters",
-    "Speed", "HeartRateBpm", "CadenceRpm", "Power", "Temperature"
-]
+## COLUMNS = [
+##    "Time", "ElapsedTime", "DistanceMeter", "AltitudeMeters",
+##    "Speed", "HeartRateBpm", "CadenceRpm", "Power", "Temperature"
+##]
 
 def read_all_csv(folder: str) -> pd.DataFrame:
     dfs = []
     
     file_list = list(Path(folder).glob("*.csv"))
-    logger.info("📥  Found %d ride files in %s", len(file_list), folder)
+    logger.info("📥  Found %d ride files in %s", len(file_list), Path(folder))
 
     for f in file_list:
-        df = pd.read_csv(f, names=COLUMNS, header=0)
+        ##df = pd.read_csv(f, names=COLUMNS, header=0)
+        df = pd.read_csv(f, header=0)
         df["ride_id"] = f.stem
         dfs.append(df)
         logger.debug("    ↳ %s  (%d rows)", f.name, len(df))
