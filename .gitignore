@@ -6,6 +6,7 @@
 # AIML data files
 /aiml/data/
 /aiml/.venv/
+/aiml/.venv310/
 
 # User-specific files
 *.rsuser

@@ -1,6 +1,6 @@
 # ---------- core scientific stack ----------
-numpy
-pandas
+numpy<2,>=1.26.4
+pandas==2.2.2                # 2.3.* requires NumPy ≥2
 scikit-learn
 matplotlib
 tqdm

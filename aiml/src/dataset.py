@@ -2,39 +2,39 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-import joblib   # for saving the scaler
+import joblib
 
 class CyclingWindowDataset(Dataset):
-    def __init__(self, npz_path: str, window: int = 5, scaler_path: str = None, mode="train"):
-        """
-        npz contains two numpy arrays: X_raw, y_raw (full time-series)
-        We build sliding windows inside __getitem__.
-        """
-        data = np.load(npz_path)
-        X_raw, y_raw = data["X"], data["y"]
-        ride_ids = data["ride_id"]
+    def __init__(self, npz_path: str, window: int = 5,
+                 scaler_path: str | None = None,
+                 mode: str = "train"):
+        data      = np.load(npz_path, allow_pickle=True)
+        X_raw     = data["X"]                  # (T, F)
+        y_raw     = data["y"]                  # (T,)
+        ride_ids  = data["ride_ids"]           # (T,)
 
+        # fit or load scaler
+        scaler_path = scaler_path or "scaler.gz"
         if mode == "train":
             self.scaler = StandardScaler().fit(X_raw)
-            joblib.dump(self.scaler, scaler_path or "scaler.gz")
+            joblib.dump(self.scaler, scaler_path)
         else:
-            self.scaler = joblib.load(scaler_path or "scaler.gz")
+            self.scaler = joblib.load(scaler_path)
 
-        X_raw = self.scaler.transform(X_raw)
+        self.X       = self.scaler.transform(X_raw).astype(np.float32)
+        self.y       = y_raw.astype(np.float32)
+        self.window  = window
+        self.ride_ids = ride_ids
 
-        # build sequences
-        self.window = window
-        seqs, targets = [], []
-        for i in range(window - 1, len(X_raw)):
-            if ride_ids[i] != ride_ids[i - window + 1]:
-                continue  # skip if window crosses sessions
-            seqs.append(X_raw[i-window+1:i+1])
-            targets.append(y_raw[i])
-        self.X = torch.tensor(np.array(seqs), dtype=torch.float32)
-        self.y = torch.tensor(np.array(targets), dtype=torch.float32).unsqueeze(-1)
+        # indices whose *entire* window stays inside one ride
+        mask = self.ride_ids[window-1:] == self.ride_ids[:-window+1]
+        self.valid_idx = np.where(mask)[0] + (window - 1)
 
     def __len__(self):
-        return len(self.X)
+        return len(self.valid_idx)
 
     def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+        j = self.valid_idx[idx]
+        seq = torch.from_numpy(self.X[j - self.window + 1 : j + 1])
+        target = torch.tensor(self.y[j]).unsqueeze(-1)
+        return seq, target

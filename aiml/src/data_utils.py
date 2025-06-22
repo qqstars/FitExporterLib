@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 COLUMNS = [
     "Time", "ElapsedTime", "DistanceMeter", "AltitudeMeters",
@@ -9,34 +12,54 @@ COLUMNS = [
 
 def read_all_csv(folder: str) -> pd.DataFrame:
     dfs = []
-    for f in Path(folder).glob("*.csv"):
-        df = pd.read_csv(f, names=COLUMNS)
-        df["ride_id"] = f.stem          # e.g., 2023-05-06
+    
+    file_list = list(Path(folder).glob("*.csv"))
+    logger.info("📥  Found %d ride files in %s", len(file_list), folder)
+
+    for f in file_list:
+        df = pd.read_csv(f, names=COLUMNS, header=0)
+        df["ride_id"] = f.stem
         dfs.append(df)
+        logger.debug("    ↳ %s  (%d rows)", f.name, len(df))
+
     combo = pd.concat(dfs, ignore_index=True)
-    combo["Time"] = pd.to_datetime(combo["Time"])
+    logger.info("🧮  Combined dataframe shape: %s", combo.shape)
+
+    combo["Time"] = pd.to_datetime(
+        combo["Time"],
+        format="%Y-%m-%dT%H:%M:%SZ",
+        utc=True
+    )
     combo.sort_values("Time", inplace=True)
     combo.reset_index(drop=True, inplace=True)
-    return combo
+
+    logger.info("util.read_all_csv: return combo")
+    return combo     # ← still raw, fix_gaps will handle gaps
 
 def fix_gaps(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Fill the missing seconds introduced when the computer paused logging.
-    We re-index to a 1 Hz timeline and forward-fill last known values
-    except Power & Speed, which go to 0 during pauses.
-    """
     df = df.copy()
-    df.set_index("Time", inplace=True)
-    full_index = pd.date_range(df.index.min(), df.index.max(), freq="1S")
+    df = df.set_index("Time")
+
+    full_index = pd.date_range(df.index.min(), df.index.max(), freq="1s")
     df = df.reindex(full_index)
-    df["ElapsedTime"].fillna(1, inplace=True)             # 1 s step
+    logger.debug("⏳  After reindex: %d → %d rows (filled gaps)",
+                 len(df.index.intersection(full_index)), len(df))
+
+    # 1-second step for the synthetic rows
+    df["ElapsedTime"] = df["ElapsedTime"].fillna(1)
+
+    # zero-speed / zero-power during pauses
     df[["Speed", "Power"]] = df[["Speed", "Power"]].fillna(0.0)
-    df[["HeartRateBpm", "CadenceRpm", "AltitudeMeters",
-        "DistanceMeter", "Temperature"]] = df[[
-            "HeartRateBpm", "CadenceRpm", "AltitudeMeters",
-            "DistanceMeter", "Temperature"]].ffill()
-    df.reset_index(inplace=True)
-    df.rename(columns={"index": "Time"}, inplace=True)
+
+    # forward-fill everything else
+    ffill_cols = [
+        "HeartRateBpm", "CadenceRpm", "AltitudeMeters",
+        "DistanceMeter", "Temperature", "ride_id"
+    ]
+    df[ffill_cols] = df[ffill_cols].ffill()
+
+    df = df.reset_index().rename(columns={"index": "Time"})
+    logger.info("util.fix_gaps: return df")
     return df
 
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -74,4 +97,8 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         "Temperature"
     ]
     target = "Power"
-    return df[features + [target]]
+    keep_cols   = features + [target, "ride_id"]   # ← retain ride ID
+    out = df[keep_cols]
+    logger.debug("🛠️  Engineered features DF shape: %s", out.shape)
+    logger.info("util.engineer_features: return out")
+    return out
