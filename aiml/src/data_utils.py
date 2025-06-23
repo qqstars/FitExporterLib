@@ -57,11 +57,14 @@ def fix_gaps(df: pd.DataFrame) -> pd.DataFrame:
 
     # zero-speed / zero-power during pauses
     df[["Speed", "Power"]] = df[["Speed", "Power"]].fillna(0.0)
-    df[["SpeedOneSecChangeRate", "SpeedThreeSecChangeRate"]] = df[["SpeedThreeSecChangeRate", "SpeedThreeSecChangeRate"]].fillna(0.0)
+    df[["SpeedOneSecChangeRate",
+     "SpeedThreeSecChangeRate"]] = df[["SpeedOneSecChangeRate",
+                                       "SpeedThreeSecChangeRate"]].fillna(0.0)
+    df["Gender_num"] = df["Gender"].map({"F": 0, "M": 1}).fillna(-1)
 
     # forward-fill everything else
     ffill_cols = [
-        "BirthYear", "age", "Height", "Weight", "Gender",
+        "BirthYear", "age", "Height", "Weight", 
         "AltitudeMeters", "AltitudeMetersOneSecChangeRate", "AltitudeMetersThreeSecChangeRate", 
         "HeartRateBpm", "HeartRateBpmOneSecChangeRate", "HeartRateBpmThreeSecChangeRate", "CadenceRpm", "CadenceRpmOneSecChangeRate", "CadenceRpmThreeSecChangeRate",
         "DistanceMeter", "Slope", "Temperature", "ride_id"
@@ -108,7 +111,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         "age",
         "Height",
         "Weight",
-        "Gender"
+        "Gender_num"
     ]
     target = "Power"
     keep_cols   = features + [target, "ride_id"]   # ← retain ride ID
